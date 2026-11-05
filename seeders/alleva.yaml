@@ -1,0 +1,7 @@
+outputs:
+  alleva_appointments: {}
+  alleva_leads: {}
+  alleva_services: {}
+  alleva_diagnosis: {}
+  alleva_contacts: {}
+  alleva_case_managers_primary_clinicians: {}

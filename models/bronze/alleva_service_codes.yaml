@@ -1,0 +1,16 @@
+load_strategy: FULL
+
+quality:
+  - type: row_count
+    min: 7
+    severity: ERROR
+
+  - type: nullness
+    column: service_code
+    max: 0
+    severity: WARNING
+
+  - type: uniqueness
+    columns: [service_code]
+    max: 0
+    severity: ERROR

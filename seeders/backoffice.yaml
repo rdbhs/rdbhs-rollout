@@ -1,0 +1,4 @@
+outputs:
+  backoffice_payroll_periods: {}
+  backoffice_productivity_goals: {}
+  backoffice_company_settings: {}
