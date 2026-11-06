@@ -5,3 +5,4 @@ outputs:
   alleva_diagnosis: {}
   alleva_contacts: {}
   alleva_case_managers_primary_clinicians: {}
+  alleva_treatment_plans: {}
