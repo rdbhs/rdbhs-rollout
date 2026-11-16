@@ -1,0 +1,56 @@
+load_strategy: FULL
+
+quality:
+  - type: nullness
+    column: end_date
+    max: 0
+    severity: ERROR
+
+  - type: nullness
+    column: client_id
+    max: 0
+    severity: ERROR
+
+  - type: custom_sql
+    name: end_date_minimum
+    sql: |
+      SELECT count(*)
+      FROM silver_treatment_plans.treatment_plans
+      WHERE end_date < DATE '2000-01-01'
+    expectations:
+      - operator: eq
+        value: 0
+    severity: WARNING
+
+  - type: custom_sql
+    name: client_full_name_required
+    sql: |
+      SELECT count(*)
+      FROM silver_treatment_plans.treatment_plans
+      WHERE client_full_name IS NULL OR trim(client_full_name) = ''
+    expectations:
+      - operator: eq
+        value: 0
+    severity: WARNING
+
+  - type: custom_sql
+    name: version_number_positive
+    sql: |
+      SELECT count(*)
+      FROM silver_treatment_plans.treatment_plans
+      WHERE version_number IS NULL OR version_number <= 0
+    expectations:
+      - operator: eq
+        value: 0
+    severity: WARNING
+
+  - type: custom_sql
+    name: end_date_business_maximum
+    sql: |
+      SELECT count(*)
+      FROM silver_treatment_plans.treatment_plans
+      WHERE end_date > timezone('America/New_York', current_timestamp)::DATE + INTERVAL '2 years'
+    expectations:
+      - operator: eq
+        value: 0
+    severity: WARNING
