@@ -12,3 +12,13 @@ wheels/
 .rollout/
 docs/
 tests/
+temp/
+tmp/
+Zone.Identifier
+
+# Keep report regression tests visible.
+!tests/
+tests/*
+!tests/test_treatment_plan_report.py
+!tests/test_utilization_report.py
+*:Zone.Identifier
