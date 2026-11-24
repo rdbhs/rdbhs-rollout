@@ -58,3 +58,22 @@ The warehouse is generated at `.rollout/warehouse.duckdb`.
 ## Time Zone
 
 The pipeline runs on a UTC server. RDBHS business time follows `America/New_York`, including daylight saving time transitions.
+
+## Treatment Plans Expiration Report
+
+Run independently from the project root after `uv sync --locked`:
+
+```bash
+uv run python -m reports.treatment_plans --report-date 2026-11-17 --output-dir /secure/reports
+```
+
+Omit `--report-date` to use today's date in America/New_York. Python callers
+can use `from reports.treatment_plans import generate_report` and call
+`generate_report(report_date, Path('/secure/reports'))`.
+The generator uses Rollout's `EngineConfig().warehouse_path`, opens its own
+read-only connection, and closes it before rendering. It preserves all Silver
+rows and versions in the inclusive 0–15 day window. ReportLab provides wrapped
+text, repeated table headers and multipage PDF output without external services.
+Each PDF has a unique filename and owner-only permissions on POSIX. The output
+contains PHI: choose an appropriately secured directory and retention policy.
+No delivery or orchestration is included.
