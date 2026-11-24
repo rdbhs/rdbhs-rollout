@@ -77,3 +77,19 @@ text, repeated table headers and multipage PDF output without external services.
 Each PDF has a unique filename and owner-only permissions on POSIX. The output
 contains PHI: choose an appropriately secured directory and retention policy.
 No delivery or orchestration is included.
+
+## Service Utilization Report
+
+```bash
+uv run python -m reports.utilization --output-dir /secure/reports
+```
+
+Uses `gold_utilization.utilization` directly, selecting utilization strictly above
+50%, in descending order. Hours and days remain separate on each row; no totals
+combine them. The reference period is cumulative from 07/01/2026, matching the
+current model, with no upper date bound. Optional `--report-date YYYY-MM-DD`
+labels generation only and does not generate a historical snapshot. The default
+is today's date in America/New_York. Python callers may use
+`reports.utilization.generate_report(report_date, output_dir)`.
+Like Treatment Plans, PDFs have unique filenames, private POSIX permissions and
+contain PHI; use a secured destination. No new dependencies are required.
