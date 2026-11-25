@@ -1,7 +1,7 @@
 WITH cte_clients AS (
     SELECT
         *,
-        date_diff('year', date_of_birth_date, current_date) AS age
+        date_part('year', age(current_date, date_of_birth_date))::INTEGER AS age
     FROM bronze.alleva_leads
     WHERE is_client = TRUE
 )

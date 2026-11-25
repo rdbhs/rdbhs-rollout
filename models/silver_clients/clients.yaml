@@ -1,0 +1,44 @@
+load_strategy: FULL
+
+quality:
+  - type: nullness
+    column: client_id
+    max: 0
+    severity: ERROR
+
+  - type: uniqueness
+    columns: [client_id]
+    max: 0
+    severity: ERROR
+
+  - type: nullness
+    column: source_client_id
+    max: 0
+    severity: ERROR
+
+  - type: uniqueness
+    columns: [source_client_id]
+    max: 0
+    severity: ERROR
+
+  - type: custom_sql
+    name: included_leads_identity_correspondence
+    sql: |
+      WITH expected AS (
+          SELECT system_lead_id AS client_id, system_client_id AS source_client_id
+          FROM bronze.alleva_leads
+          WHERE is_client = TRUE
+      ),
+      differences AS (
+          (SELECT client_id, source_client_id FROM silver_clients.clients
+           EXCEPT ALL SELECT * FROM expected)
+          UNION ALL
+          (SELECT * FROM expected
+           EXCEPT ALL SELECT client_id, source_client_id FROM silver_clients.clients)
+      )
+
+      SELECT count(*) FROM differences
+    expectations:
+      - operator: eq
+        value: 0
+    severity: ERROR
