@@ -1,0 +1,12 @@
+load_strategy: FULL
+
+quality:
+  - type: nullness
+    column: client_id
+    max: 0
+    severity: ERROR
+
+  - type: uniqueness
+    columns: [client_id, service_code_group, payment_basis, usage_limit, usage_unit]
+    max: 0
+    severity: ERROR
