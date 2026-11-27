@@ -1,0 +1,12 @@
+load_strategy: FULL
+
+quality:
+  - type: nullness
+    column: year
+    max: 0
+    severity: ERROR
+
+  - type: uniqueness
+    columns: [year, service_code_group, client_full_name, payment_basis, usage_unit, usage_limit, appointment_type, service_code, appointment_topic]
+    max: 0
+    severity: ERROR

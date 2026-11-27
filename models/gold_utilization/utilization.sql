@@ -1,5 +1,6 @@
 WITH cte_base AS (
     SELECT
+        year(service.service_date) AS year,
         code.service_code_group,
         code.service_code,
         code.payment_basis,
@@ -29,6 +30,7 @@ WITH cte_base AS (
 
 cte_agg AS (
     SELECT
+        year,
         service_code_group,
         payment_basis,
         usage_limit,
@@ -38,6 +40,7 @@ cte_agg AS (
         sum(usage_minutes) AS usage_minutes
     FROM cte_base
     GROUP BY
+        year,
         service_code_group,
         payment_basis,
         usage_limit,
@@ -47,6 +50,7 @@ cte_agg AS (
 
 cte_metrics AS (
     SELECT
+        year,
         service_code_group,
         payment_basis,
         usage,
@@ -78,6 +82,7 @@ cte_metrics AS (
 )
 
 SELECT
+    metrics.year,
     metrics.service_code_group,
     client.client_full_name,
     metrics.payment_basis,

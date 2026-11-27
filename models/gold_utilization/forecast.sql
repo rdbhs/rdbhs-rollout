@@ -1,5 +1,6 @@
 WITH cte_base AS (
     SELECT DISTINCT
+        year(productivity.start_date) AS year,
         productivity.appointment_id,
         productivity.start_date,
         productivity.client_full_name,
@@ -23,6 +24,7 @@ WITH cte_base AS (
 
 cte_agg AS (
     SELECT
+        year,
         service_code_group,
         client_full_name,
         payment_basis,
@@ -36,6 +38,7 @@ cte_agg AS (
         sum(appointment_minutes) AS total_minutes
     FROM cte_base
     GROUP BY
+        year,
         service_code_group,
         client_full_name,
         payment_basis,
@@ -47,6 +50,7 @@ cte_agg AS (
 )
 
 SELECT
+    year,
     service_code_group,
     client_full_name,
     payment_basis,
