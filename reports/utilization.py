@@ -1,4 +1,4 @@
-"""Standalone service utilization PDF using the current cumulative Gold snapshot."""
+"""Standalone service utilization PDF using the annual Gold snapshot."""
 
 import argparse
 import math
@@ -28,7 +28,7 @@ def _validate_threshold(value):
     return value
 
 
-def _load_utilization(utilization_threshold=0.5):
+def _load_utilization(year, utilization_threshold=0.5):
     _validate_threshold(utilization_threshold)
     query = (Path(__file__).resolve().parent / "queries" / "utilization_above_threshold.sql").read_text(
         encoding="utf-8"
@@ -38,35 +38,40 @@ def _load_utilization(utilization_threshold=0.5):
     ) as connection:
         return connection.execute(
             query,
-            [utilization_threshold],
+            [year, utilization_threshold],
         ).fetchall()
 
 
-def utilization_summary(rows, threshold):
-    """Temporary record-level summary; Gold does not preserve client identity."""
-    label = f"{threshold * 100:g}%"
-    if not rows:
-        return f"No service utilization records exceed {label}."
-    count = len(rows)
-    reached = sum(row[-1] >= 1 for row in rows)
-    noun = "record" if count == 1 else "records"
-    verb = "exceeds" if count == 1 else "exceed"
-    limit_noun = "record has" if reached == 1 else "records have"
-    return (
-        f"{count} service utilization {noun} {verb} {label} utilization. "
-        f"Of these, {reached} {limit_noun} reached or exceeded 100% utilization."
-    )
+def multi_group_rows(rows):
+    """Select distinct multi-group identities from the already filtered details."""
+    clients = {}
+    for row in rows:
+        client_id = row[6]
+        if client_id is not None:
+            clients.setdefault(client_id, []).append(row)
+    selected = [
+        client_rows for client_rows in clients.values()
+        if len({row[1] for row in client_rows if row[1] is not None}) > 1
+    ]
+    selected.sort(key=lambda client_rows: (
+        (client_rows[0][0] or "").casefold(), client_rows[0][6]
+    ))
+    return [row for client_rows in selected
+            for row in sorted(client_rows, key=lambda row: (-row[5], row[1] or ""))]
 
 
 def generate_report(
     report_date: date | None = None,
     output_dir: Path = Path("."),
     utilization_threshold: float = 0.5,
+    year: int | None = None,
 ) -> Path:
     """Write a private PDF. report_date labels generation, not a historical cutoff."""
-    report_date = report_date or datetime.now(ZoneInfo("America/New_York")).date()
+    today = datetime.now(ZoneInfo("America/New_York")).date()
+    year = today.year if year is None else year
+    report_date = report_date or today
     _validate_threshold(utilization_threshold)
-    rows = _load_utilization(utilization_threshold)
+    rows = _load_utilization(year, utilization_threshold)
     styles = report_styles()
 
     def paragraph(value):
@@ -80,32 +85,18 @@ def generate_report(
     threshold_label = f"{utilization_threshold * 100:g}%"
     story = [
         Paragraph("Utilization Report", styles["Title"]),
-        paragraph(f"Generation Date: {report_date:%m/%d/%Y}"),
-        Paragraph("Summary", styles["Heading2"]),
-        paragraph(utilization_summary(rows, utilization_threshold)),
-        Spacer(1, 16),
+        paragraph(f"Reporting Year: {year}    |    Utilization Threshold: > {threshold_label}"),
+        Spacer(1, styles["BodyText"].leading),
         Paragraph("Utilization Details", styles["Heading2"]),
     ]
-    if not rows:
-        story.append(
-            paragraph(f"No service utilization records exceed {threshold_label}.")
-        )
-    else:
-        data = [
-            [
-                Paragraph(escape(v), styles["TableHeader"])
-                for v in ("Client", "Service Group", "Usage", "Limit", "Utilization %")
-            ]
-        ]
+
+    def detail_table(detail_rows):
+        data = [[Paragraph(escape(label), styles["TableHeader"])
+                 for label in ("Client", "Service Group", "Usage", "Limit", "Utilization %")]]
         data += [
-            [
-                paragraph(name),
-                paragraph(group),
-                quantity(usage, unit),
-                quantity(limit, unit),
-                paragraph(f"{utilization:.2%}"),
-            ]
-            for name, group, usage, unit, limit, utilization in rows
+            [paragraph(name), paragraph(group), quantity(usage, unit),
+             quantity(limit, unit), paragraph(f"{utilization:.2%}")]
+            for name, group, usage, unit, limit, utilization, _client_id in detail_rows
         ]
         table = LongTable(
             data, colWidths=[150, 105, 90, 85, 90], repeatRows=1, splitInRow=1
@@ -114,7 +105,21 @@ def generate_report(
             for cell in row[2:]:
                 cell.style = cell.style.clone("Numeric", alignment=2)
         table.setStyle(table_style())
-        story.append(table)
+        return table
+
+    if not rows:
+        story.append(
+            paragraph(f"No service utilization records exceed {threshold_label}.")
+        )
+    else:
+        story.append(detail_table(rows))
+    multi_group = multi_group_rows(rows)
+    if multi_group:
+        story.extend([
+            Spacer(1, styles["BodyText"].leading),
+            Paragraph("Clients with Multiple Service Groups", styles["Heading2"]),
+            detail_table(multi_group),
+        ])
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     with NamedTemporaryFile(
@@ -155,5 +160,6 @@ if __name__ == "__main__":
         help="Generation label only; does not filter the Gold snapshot.",
     )
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--year", type=int, help="Reporting year; defaults to the current year in America/New_York.")
     args = parser.parse_args()
-    generate_report(args.report_date, args.output_dir)
+    generate_report(args.report_date, args.output_dir, year=args.year)

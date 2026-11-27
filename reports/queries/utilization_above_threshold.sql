@@ -4,9 +4,11 @@ SELECT
     usage,
     usage_unit,
     usage_limit,
-    utilization
+    utilization,
+    client_id
 FROM gold_utilization.utilization
-WHERE utilization > ?
+WHERE year = ?
+    AND utilization > ?
 ORDER BY
     utilization DESC,
     client_full_name,
