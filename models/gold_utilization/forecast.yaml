@@ -7,6 +7,11 @@ quality:
     severity: ERROR
 
   - type: uniqueness
-    columns: [year, service_code_group, client_full_name, payment_basis, usage_unit, usage_limit, appointment_type, service_code, appointment_topic]
+    columns: [year, service_code_group, client_id, payment_basis, usage_unit, usage_limit, appointment_type, service_code, appointment_topic]
+    max: 0
+    severity: ERROR
+
+  - type: nullness
+    column: client_id
     max: 0
     severity: ERROR
